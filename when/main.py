@@ -1,16 +1,22 @@
 import re
 from dataclasses import dataclass
+from difflib import get_close_matches
 from textwrap import dedent
-from typing import List, Optional, Tuple
+from typing import List, Optional, Sequence, Set, Tuple
 
 import pendulum
 import pendulum.tz.timezone
 from humanize import precisedelta
 from pendulum import UTC
+from pytzdata import get_timezones
 from rich.box import ROUNDED
 from rich.console import Console, ConsoleRenderable, RenderableType
 from rich.table import Column, Table
-from typer import Argument, Typer
+from rich.text import Text
+from typer import Argument, Exit, Option, Typer
+
+from when.constants import PACKAGE_NAME, __version__
+from when.utils import partition
 
 app = Typer(
     help=dedent(
@@ -22,6 +28,12 @@ app = Typer(
 )
 
 
+def version_callback(value: bool) -> None:
+    if value:
+        print(f"{PACKAGE_NAME} {__version__}")
+        raise Exit()
+
+
 @app.command()
 def when(
     t: str = Argument(
@@ -31,7 +43,34 @@ def when(
             The time to display information about.
             """
         ),
-    )
+    ),
+    timezones: List[str] = Option(
+        [],
+        "--timezone",
+        "-z",
+        help=dedent(
+            """\
+            Timezones to convert to.
+            """
+        ),
+    ),
+    add_utc: bool = Option(
+        True,
+        help=dedent(
+            """\
+            Whether to implicitly include UTC in the output.
+            """
+        ),
+    ),
+    add_local: bool = Option(
+        True,
+        help=dedent(
+            """\
+            Whether to implicitly include the local timezone in the output.
+            """
+        ),
+    ),
+    version: Optional[bool] = Option(None, "--version", callback=version_callback),
 ) -> None:
     """ """
     console = Console()
@@ -39,11 +78,42 @@ def when(
     now = pendulum.now()
     target = parse_t(t) or now
 
-    timezones = [UTC, pendulum.local_timezone()]  # type: ignore[operator]
+    available_timezones = set(get_timezones())
+    good_timezones, bad_timezones = partition(timezones, lambda tz: tz in available_timezones)
+    display_bad_timezone_help(console, available_timezones, bad_timezones)
 
-    rich_time = RichTime(target=target, now=now, timezones=timezones)
+    display_timezones = {pendulum.timezone(tz) for tz in good_timezones}
+    if add_utc:
+        display_timezones.add(UTC)
+    if add_local:
+        display_timezones.add(pendulum.local_timezone())  # type: ignore[operator]
+    display_timezones = sorted(display_timezones, key=lambda tz: tz.utcoffset(now), reverse=True)
+
+    rich_time = RichTime(target=target, now=now, timezones=display_timezones)
 
     console.print(rich_time)
+
+
+def display_bad_timezone_help(
+    console: Console,
+    available_timezones: Set[str],
+    bad_timezones: Sequence[str],
+) -> None:
+    if not bad_timezones:
+        return
+
+    msg = Text(style="red")
+    for tz in bad_timezones:
+        msg.append(f"Unknown timezone ").append(tz, style="bold").append(".")
+        nearby_timezones = get_close_matches(tz, available_timezones)
+        if nearby_timezones:
+            msg.append(" Maybe you meant:")
+            for match in nearby_timezones:
+                msg.append(f"\n  {match}")
+
+        msg.append("\n")
+
+    console.print(msg)
 
 
 EPOCH_SECONDS = re.compile(r"\d{,10}(\.\d+)?")
@@ -82,7 +152,8 @@ class RichTime:
                 f"{precisedelta(int(diff.total_seconds()))} {'ago' if diff.total_seconds() < 0 else 'from now'}",
             )
         metadata.add_row("Epoch Timestamp (s)", f"{self.target.timestamp()}")
-        metadata.add_row("Epoch Timestamp (ms)", f"{int(self.target.timestamp() * 1000)}")
+        metadata.add_row("Epoch Timestamp (ms)", f"{int(self.target.timestamp() * 1e3)}")
+        metadata.add_row("Epoch Timestamp (µs)", f"{int(self.target.timestamp() * 1e6)}")
 
         if self.target == self.now:
             columns = [
