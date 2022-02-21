@@ -50,7 +50,8 @@ def when(
         "-z",
         help=dedent(
             """\
-            Timezones to convert to.
+            Add a timezone to convert to.
+            Pass this option multiple times to add multiple timezones.
             """
         ),
     ),
@@ -119,7 +120,7 @@ def display_bad_timezone_help(
     console.print(msg)
 
 
-EPOCH_SECONDS = re.compile(r"\d{,10}(\.\d+)?")
+EPOCH_SECONDS = re.compile(r"\d{1,10}(\.\d+)?")
 EPOCH_MILLISECONDS = re.compile(r"\d{13}")
 EPOCH_MICROSECONDS = re.compile(r"\d{16}")
 
@@ -127,11 +128,11 @@ EPOCH_MICROSECONDS = re.compile(r"\d{16}")
 def parse_t(t: Optional[str]) -> Optional[pendulum.DateTime]:
     if not t:
         return None
-    elif EPOCH_SECONDS.match(t):
+    elif EPOCH_SECONDS.fullmatch(t):
         return pendulum.from_timestamp(float(t))
-    elif EPOCH_MILLISECONDS.match(t):
+    elif EPOCH_MILLISECONDS.fullmatch(t):
         return pendulum.from_timestamp(float(t) / 1e3)
-    elif EPOCH_MICROSECONDS.match(t):
+    elif EPOCH_MICROSECONDS.fullmatch(t):
         return pendulum.from_timestamp(float(t) / 1e6)
     else:
         parsed = pendulum.parse(t)

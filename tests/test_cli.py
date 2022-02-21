@@ -20,3 +20,10 @@ def test_help_via_main() -> None:
     result = subprocess.run([sys.executable, "-m", PACKAGE_NAME, "--help"])
 
     assert result.returncode == 0
+
+
+def test_version(runner: CliRunner) -> None:
+    result = runner.invoke(app, ["--version"])
+
+    assert __version__ in result.stdout
+    assert result.exit_code == 0
