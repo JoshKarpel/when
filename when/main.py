@@ -82,14 +82,17 @@ def when(
     good_timezones, bad_timezones = partition(timezones, lambda tz: tz in available_timezones)
     display_bad_timezone_help(console, available_timezones, bad_timezones)
 
-    display_timezones = {pendulum.timezone(tz) for tz in good_timezones}
+    display_timezones = {pendulum.timezone(tz) for tz in good_timezones}  # type: ignore[operator]
     if add_utc:
         display_timezones.add(UTC)
     if add_local:
         display_timezones.add(pendulum.local_timezone())  # type: ignore[operator]
-    display_timezones = sorted(display_timezones, key=lambda tz: tz.utcoffset(now), reverse=True)
 
-    rich_time = RichTime(target=target, now=now, timezones=display_timezones)
+    rich_time = RichTime(
+        target=target,
+        now=now,
+        timezones=sorted(display_timezones, key=lambda tz: tz.utcoffset(now), reverse=True),
+    )
 
     console.print(rich_time)
 
