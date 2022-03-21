@@ -3,11 +3,11 @@ from typing import Callable, Iterable, List, Tuple, TypeVar
 T = TypeVar("T")
 
 
-def partition(it: Iterable[T], is_left: Callable[[T], bool]) -> Tuple[List[T], List[T]]:
+def partition(items: Iterable[T], is_left: Callable[[T], bool]) -> Tuple[List[T], List[T]]:
     left = []
     right = []
 
-    for item in it:
+    for item in items:
         if is_left(item):
             left.append(item)
         else:

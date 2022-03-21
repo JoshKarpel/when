@@ -1,9 +1,7 @@
 import subprocess
 import sys
-from unittest.mock import MagicMock
 
-import pytest
-from pytest_mock import MockFixture
+from pendulum.parsing import ParserError
 from typer.testing import CliRunner
 
 from when.constants import PACKAGE_NAME, __version__
@@ -27,3 +25,11 @@ def test_version(runner: CliRunner) -> None:
 
     assert __version__ in result.stdout
     assert result.exit_code == 0
+
+
+def test_parse_error(runner: CliRunner) -> None:
+    result = runner.invoke(app, ["not a time"])
+
+    assert result.exit_code == 1
+    assert "not a time" in result.stderr
+    assert ParserError.__name__ not in result.stderr

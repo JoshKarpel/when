@@ -31,11 +31,6 @@ repos:
     rev: 22.1.0
     hooks:
       - id: black
-  - repo: https://github.com/hadialqattan/pycln
-    rev: v1.2.0
-    hooks:
-      - id: pycln
-        args: [ --config=pyproject.toml ]
   - repo: https://github.com/PyCQA/isort
     rev: 5.10.1
     hooks:

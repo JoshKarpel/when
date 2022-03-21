@@ -8,6 +8,7 @@ import pendulum
 import pendulum.tz.timezone
 from humanize import precisedelta
 from pendulum import UTC
+from pendulum.parsing import ParserError
 from pytzdata import get_timezones
 from rich.box import ROUNDED
 from rich.console import Console, ConsoleRenderable, RenderableType
@@ -74,14 +75,20 @@ def when(
     version: Optional[bool] = Option(None, "--version", callback=version_callback),
 ) -> None:
     """ """
-    console = Console()
+    stdout = Console()
+    stderr = Console(stderr=True)
 
     now = pendulum.now()
-    target = parse_t(t) or now
+
+    try:
+        target = parse_t(t) or now
+    except ParserError as e:
+        stderr.print(Text(str(e), style="red"))
+        raise Exit(1)
 
     available_timezones = set(get_timezones())
     good_timezones, bad_timezones = partition(timezones, lambda tz: tz in available_timezones)
-    display_bad_timezone_help(console, available_timezones, bad_timezones)
+    display_bad_timezone_help(stdout, available_timezones, bad_timezones)
 
     display_timezones = {pendulum.timezone(tz) for tz in good_timezones}  # type: ignore[operator]
     if add_utc:
@@ -95,7 +102,7 @@ def when(
         timezones=sorted(display_timezones, key=lambda tz: tz.utcoffset(now), reverse=True),
     )
 
-    console.print(rich_time)
+    stdout.print(rich_time)
 
 
 def display_bad_timezone_help(
