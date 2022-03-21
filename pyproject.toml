@@ -57,6 +57,7 @@ testpaths = ["tests", "when"]
 
 [tool.mypy]
 show_error_codes = true
+pretty = true
 
 files = ["when", "tests"]
 
