@@ -90,11 +90,11 @@ def when(
     good_timezones, bad_timezones = partition(timezones, lambda tz: tz in available_timezones)
     display_bad_timezone_help(stdout, available_timezones, bad_timezones)
 
-    display_timezones = {pendulum.timezone(tz) for tz in good_timezones}  # type: ignore[operator]
+    display_timezones = {pendulum.timezone(tz) for tz in good_timezones}  # type: ignore
     if add_utc:
         display_timezones.add(UTC)
     if add_local:
-        display_timezones.add(pendulum.local_timezone())  # type: ignore[operator]
+        display_timezones.add(pendulum.local_timezone())  # type: ignore
 
     rich_time = RichTime(
         target=target,
