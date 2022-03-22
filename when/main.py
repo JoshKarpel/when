@@ -72,7 +72,16 @@ def when(
             """
         ),
     ),
-    version: Optional[bool] = Option(None, "--version", callback=version_callback),
+    version: Optional[bool] = Option(
+        None,
+        "--version",
+        callback=version_callback,
+        help=dedent(
+            """\
+            Display version information, then exit.
+            """
+        ),
+    ),
 ) -> None:
     """ """
     stdout = Console()
