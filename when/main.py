@@ -292,11 +292,13 @@ class Clock:
         )
 
 
-def fraction_to_clock_angle(frac):
+def fraction_to_clock_angle(frac: float) -> float:
     return (frac * TAU) - TAU / 4
 
 
-def draw_hand(clock, center, radius, theta, style, last):
+def draw_hand(
+    clock: List[List[Text]], center: int, radius: int, theta: float, style: Style, last: str
+) -> None:
     second_x = round(cos(theta) * radius) + center
     second_y = round(sin(theta) * radius) + center
     dx = abs(center - second_x)
