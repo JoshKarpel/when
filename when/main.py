@@ -1,11 +1,10 @@
-import math
 import re
 from dataclasses import dataclass
 from difflib import get_close_matches
-from math import ceil, cos, pi, sin
+from math import cos, pi, sin
 from textwrap import dedent
 from time import sleep
-from typing import Iterator, List, Optional, Sequence, Set, Tuple
+from typing import List, Optional, Sequence, Set, Tuple
 
 import pendulum
 import pendulum.tz.timezone
@@ -233,7 +232,7 @@ class RichTime:
         return wrapper
 
 
-TAU = 2 * math.pi
+TAU = 2 * pi
 
 
 @dataclass(frozen=True)
