@@ -8,7 +8,7 @@ from when.utils import partition
 
 class TestPartition:
     g = given(
-        items=st.iterables(st.integers(), max_size=100),
+        items=st.iterables(st.integers(), max_size=10),
         is_left=st.functions(like=lambda x: None, returns=st.booleans(), pure=True),
     )
 
