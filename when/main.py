@@ -4,11 +4,12 @@ from difflib import get_close_matches
 from math import cos, pi, sin
 from textwrap import dedent
 from time import sleep
-from typing import List, Optional, Sequence, Set, Tuple
+from typing import Iterable, List, Optional, Sequence, Set, Tuple
 
 import pendulum
 import pendulum.tz.timezone
 from humanize import precisedelta
+from more_itertools import partition
 from pendulum import UTC
 from pendulum.parsing import ParserError
 from pytzdata import get_timezones
@@ -22,7 +23,6 @@ from rich.text import Text
 from typer import Argument, Exit, Option, Typer
 
 from when.constants import PACKAGE_NAME, __version__
-from when.utils import partition
 
 app = Typer(
     help=dedent(
@@ -44,6 +44,7 @@ def version_callback(value: bool) -> None:
 def when(
     t: str = Argument(
         None,
+        metavar="TARGET",
         help=dedent(
             """\
             The time to display information about.
@@ -116,7 +117,7 @@ def when(
             raise Exit(1)
 
         available_timezones = set(get_timezones())
-        good_timezones, bad_timezones = partition(timezones, lambda tz: tz in available_timezones)
+        bad_timezones, good_timezones = partition(lambda tz: tz in available_timezones, timezones)
         display_bad_timezone_help(stdout, available_timezones, bad_timezones)
 
         display_timezones = {pendulum.timezone(tz) for tz in good_timezones}  # type: ignore
@@ -137,11 +138,8 @@ def when(
 def display_bad_timezone_help(
     console: Console,
     available_timezones: Set[str],
-    bad_timezones: Sequence[str],
+    bad_timezones: Iterable[str],
 ) -> None:
-    if not bad_timezones:
-        return
-
     msg = Text(style="red")
     for tz in bad_timezones:
         msg.append(f"Unknown timezone ").append(tz, style="bold").append(".")
@@ -153,7 +151,7 @@ def display_bad_timezone_help(
 
         msg.append("\n")
 
-    console.print(msg)
+    console.print(msg, end="")
 
 
 EPOCH_SECONDS = re.compile(r"\d{1,10}(\.\d+)?")
@@ -195,32 +193,17 @@ class RichTime:
         metadata.add_row("Epoch Timestamp (ms)", f"{int(self.target.timestamp() * 1e3)}")
         metadata.add_row("Epoch Timestamp (µs)", f"{int(self.target.timestamp() * 1e6)}")
 
-        if self.target == self.now:
-            columns = [
-                Column("Timezone"),
-                Column("Now"),
-            ]
-            rows: List[Tuple[RenderableType, ...]] = [
-                (
-                    timezone.name,
-                    str(self.now.astimezone(timezone).to_datetime_string()),
-                )
-                for timezone in self.timezones
-            ]
-        else:
-            columns = [
-                Column("Timezone"),
-                Column("Target"),
-                Column("Now"),
-            ]
-            rows = [
-                (
-                    timezone.name,
-                    str(self.target.astimezone(timezone).to_datetime_string()),
-                    str(self.now.astimezone(timezone).to_datetime_string()),
-                )
-                for timezone in self.timezones
-            ]
+        columns = [
+            Column("Timezone"),
+            Column("Target"),
+        ]
+        rows = [
+            (
+                timezone.name,
+                str(self.target.astimezone(timezone).to_datetime_string()),
+            )
+            for timezone in self.timezones
+        ]
 
         by_timezone = Table(*columns, box=ROUNDED)
         for row in rows:
